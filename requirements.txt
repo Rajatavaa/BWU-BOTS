@@ -1,0 +1,10 @@
+# Workshop runtime - the LangChain ecosystem (Python path, Stages A-F)
+langchain-core>=0.3
+langchain-groq>=0.3        # Groq chat models (openai/gpt-oss-120b per the outline)
+langchain-openai>=0.3      # Stage B embeddings: Groq has no embeddings API
+langchain-text-splitters>=0.3
+langgraph>=0.4             # create_react_agent: the agent runtime (Stages D-F)
+
+openpyxl>=3.1              # Excel demo storage (Stage E)
+python-dotenv>=1.0         # loads .env with the API keys (never commit .env)
+pydantic>=2.0              # validated customer-intake schema (Stage C)

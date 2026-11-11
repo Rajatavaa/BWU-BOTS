@@ -1,0 +1,419 @@
+{
+  "name": "Brightlane Customer Care & Booking Assistant",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "public": false,
+        "options": {}
+      },
+      "id": "82dce147-e774-43c9-83b4-2e1762cefd65",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -340,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "439fb4b2-c877-47b5-9620-5bb64f2f9e82",
+              "name": "knowledge",
+              "value": "# Brightlane Home Services — Services & FAQ (fictional demo company)\n\n## About us\nBrightlane Home Services is a small, licensed home-care company. One certified technician\nper appointment. All bookings require a customer name, phone, service, date and time.\n\n## Services and prices (visit price, parts/materials billed separately)\n- Home Deep Cleaning — 60 min slot — $149\n- Standard Home Cleaning — 60 min slot — $89\n- Plumbing Visit — 60 min slot — $99\n- Electrical Visit — 60 min slot — $99\n- HVAC Maintenance — 60 min slot — $129\n- Appliance Repair Visit — 60 min slot — $119\n\n## Opening hours and booking rules\n- Monday to Saturday, 09:00 to 17:00.\n- Start times are on the hour: 09:00, 10:00, 11:00, 12:00, 13:00, 14:00, 15:00, 16:00.\n- Closed on Sundays.\n- Each appointment occupies one full 60-minute slot with one technician.\n- No same-day bookings; appointments must be booked at least one day ahead.\n\n## Service areas and travel fee\n- Central district: no travel fee.\n- Northide and Riverside zones: $10 travel fee per visit.\n- Outside these zones: phone support only.\n\n## Cancellation and reschedule policy\n- Free cancellation or reschedule up to 24 hours before the appointment.\n- Later than 24 hours: $35 late-change fee.\n- No-shows are charged 50% of the visit price.\n\n## Payment\n- Payment after the completed service: card or cash.\n- Cards on file are optional and stored encrypted.\n\n## Warranty and safety\n- 14-day workmanship warranty on all visits.\n- Technicians are background-checked, insured and carry ID badges upon arrival.\n\n## Contact\n- Phone: (555) 016-3344 — for emergencies and urgent same-day cases.\n- Email: hello@brightlane.example (demo address).\n- Gift cards are available in $50, $100 and $150 values at the front desk.",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false
+      },
+      "id": "d8534166-6067-4326-bba2-bdb790b5d249",
+      "name": "Company Knowledge Document",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        -120,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "json",
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.knowledge }}",
+        "options": {}
+      },
+      "id": "df291471-ab56-4716-ad99-f1fbe5b7e716",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        100,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "b4642959-28e3-49d3-94c9-2827945e71c3",
+      "name": "Recursive Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        80,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "c0747c31-197f-448d-8d28-8992789e8d12",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [
+        320,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": "brightlane_demo_kb",
+        "clearStore": true
+      },
+      "id": "96b401d4-461a-49ea-842a-379e67e4ff50",
+      "name": "Simple Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "949f25eb-5232-4b8f-98a6-b10b5efcec6b",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        500,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Chat Trigger').item.json.sessionId }}"
+      },
+      "id": "bcd19acd-43d2-4644-9627-a03ba6e24546",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "name": "company_services_info",
+        "description": "Answer customer questions about Brightlane Home Services: services offered, prices, guarantees, opening hours, service areas and policies. ALWAYS call this tool before answering any factual question about the company - do not rely on your own knowledge.",
+        "topK": 4
+      },
+      "id": "46afd6ec-ca34-453d-bdbf-208c6d6b726f",
+      "name": "Company Services Info",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        860,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "You are the virtual assistant for Brightlane Home Services, a fictional home-services company.\nCompany facts (services, prices, guarantees, opening hours, service areas, policies) come ONLY from the 'company_services_info' tool - always use it before answering factual questions about Brightlane.\nBookings are handled only through the tools, never from your imagination:\n- First check_duplicate_booking, then check_availability, then save_booking.\n- Hourly start times 09:00-16:00, Monday to Saturday (closed Sundays), one technician per slot.\n- A duplicate (same customer + same service + same date) must be refused with a friendly explanation.\n- Never invent dates, times or booking references; references look like APT-0001.\nTone: warm, concise, professional. If information is missing, ask ONE short clarifying question.\nToday's date: {{ $now.format('yyyy-MM-dd') }} ( Luxon format; adjust relative phrases yourself )."
+        }
+      },
+      "id": "29f73463-f7ba-4ee1-bb3f-1bce74a997d1",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        560,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "name": "check_availability",
+        "description": "Check which appointment slots are free at Brightlane for one date. Input MUST be a JSON object: {\"date\": \"YYYY-MM-DD\"} - convert any date the customer mentions into ISO format yourself before calling. Returns the free hourly start times (09:00-16:00, one technician per slot; closed on Sundays).",
+        "language": "javaScript",
+        "jsCode": "\n// ---- Brightlane demo booking store -----------------------------------------\n// In ACTIVE (production) executions this persists between chats through\n// $getWorkflowStaticData('global'). In editor test runs the store resets on\n// every run - for the workshop that doubles as the \"reset\" button.\nconst SLOT_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];\nconst SERVICES = ['Home Deep Cleaning', 'Standard Home Cleaning', 'Plumbing Visit', 'Electrical Visit', 'HVAC Maintenance', 'Appliance Repair Visit'];\n\nfunction isoDate(offsetDays) {\n  const d = new Date();\n  d.setDate(d.getDate() + (offsetDays || 0));\n  const m = String(d.getMonth() + 1).padStart(2, '0');\n  const day = String(d.getDate()).padStart(2, '0');\n  return d.getFullYear() + '-' + m + '-' + day;\n}\n\nfunction seedStore() {\n  const now = new Date().toISOString().slice(0, 16).replace('T', ' ');\n  return [\n    { ref: 'APT-0001', customer: 'Maya Chen',     phone: '555-0143', service: 'Home Deep Cleaning',     date: isoDate(3), time: '10:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0002', customer: 'Dmitri Volkov', phone: '555-0177', service: 'Appliance Repair Visit', date: isoDate(2), time: '14:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0003', customer: 'Elena Petrova', phone: '555-0164', service: 'Plumbing Visit',         date: isoDate(2), time: '16:00', status: 'Confirmed', created: now },\n  ];\n}\n\nfunction getStore() {\n  let store = null;\n  try { store = $getWorkflowStaticData('global'); } catch (err) { store = null; }\n  if (!store || typeof store !== 'object') {\n    store = (globalThis.__brightlaneStore = globalThis.__brightlaneStore || {});\n  }\n  if (!Array.isArray(store.bookings)) store.bookings = seedStore();\n  return store;\n}\n\nfunction nextRef(store) {\n  let highest = 0;\n  for (const b of store.bookings) {\n    const m = /^APT-(\\d+)$/.exec(String(b.ref || ''));\n    if (m) highest = Math.max(highest, parseInt(m[1], 10));\n  }\n  return 'APT-' + String(highest + 1).padStart(4, '0');\n}\n\n// The agent sends its arguments as a JSON object (often serialised to a\n// string). Accept either shape so both agent styles keep working.\nfunction parseArgs() {\n  let raw = (typeof query !== 'undefined' && query !== null) ? query : ($json && $json.query);\n  if (typeof raw === 'string') {\n    raw = raw.trim();\n    if (!raw) return {};\n    try { raw = JSON.parse(raw); } catch (err) {\n      throw new Error('Input must be a JSON object, for example: ' + JSON.stringify({ date: isoDate(2) }));\n    }\n  }\n  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {\n    throw new Error('Input must be a JSON object');\n  }\n  return raw;\n}\n\nfunction isSunday(dateIso) {\n  return new Date(dateIso + 'T12:00:00').getDay() === 0; // getDay(): 0 = Sunday\n}\n\n// input: {\"date\": \"YYYY-MM-DD\"}\nconst args = parseArgs();\nconst date = String(args.date || '').trim();\nif (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) {\n  throw new Error('check_availability needs {\"date\":\"YYYY-MM-DD\"}. Today is ' + isoDate() +\n    \". Convert the wording the customer used into ISO format yourself first.\");\n}\nif (isSunday(date)) {\n  return date + ' is a Sunday - Brightlane is closed on Sundays. Free slots: none. Offer Monday to Saturday.';\n}\nconst store = getStore();\nconst taken = {};\nfor (const b of store.bookings) {\n  if (b.status === 'Confirmed' && b.date === date) taken[b.time] = true;\n}\nconst free = SLOT_HOURS.filter(function (h) { return !taken[h]; });\nconst takenList = SLOT_HOURS.filter(function (h) { return taken[h]; });\nlet msg = free.length\n  ? date + ' free slots: ' + free.join(', ') + ' (hourly starts 09:00-16:00, one technician per slot).'\n  : date + ' is fully booked - every hourly slot 09:00-16:00 is taken.';\nif (takenList.length) msg += ' Taken: ' + takenList.join(', ') + '.';\nreturn msg;\n"
+      },
+      "id": "5cb9c787-948f-47f5-bbd3-856129193e0b",
+      "name": "Check Availability",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        440,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "name": "check_duplicate_booking",
+        "description": "Check whether a request would be a repeat booking. Input MUST be a JSON object: {\"customer\": \"...\", \"service\": \"...\", \"date\": \"YYYY-MM-DD\"}. A duplicate exists when the same customer already has a CONFIRMED booking with the same service on the same date. Call this BEFORE save_booking.",
+        "language": "javaScript",
+        "jsCode": "\n// ---- Brightlane demo booking store -----------------------------------------\n// In ACTIVE (production) executions this persists between chats through\n// $getWorkflowStaticData('global'). In editor test runs the store resets on\n// every run - for the workshop that doubles as the \"reset\" button.\nconst SLOT_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];\nconst SERVICES = ['Home Deep Cleaning', 'Standard Home Cleaning', 'Plumbing Visit', 'Electrical Visit', 'HVAC Maintenance', 'Appliance Repair Visit'];\n\nfunction isoDate(offsetDays) {\n  const d = new Date();\n  d.setDate(d.getDate() + (offsetDays || 0));\n  const m = String(d.getMonth() + 1).padStart(2, '0');\n  const day = String(d.getDate()).padStart(2, '0');\n  return d.getFullYear() + '-' + m + '-' + day;\n}\n\nfunction seedStore() {\n  const now = new Date().toISOString().slice(0, 16).replace('T', ' ');\n  return [\n    { ref: 'APT-0001', customer: 'Maya Chen',     phone: '555-0143', service: 'Home Deep Cleaning',     date: isoDate(3), time: '10:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0002', customer: 'Dmitri Volkov', phone: '555-0177', service: 'Appliance Repair Visit', date: isoDate(2), time: '14:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0003', customer: 'Elena Petrova', phone: '555-0164', service: 'Plumbing Visit',         date: isoDate(2), time: '16:00', status: 'Confirmed', created: now },\n  ];\n}\n\nfunction getStore() {\n  let store = null;\n  try { store = $getWorkflowStaticData('global'); } catch (err) { store = null; }\n  if (!store || typeof store !== 'object') {\n    store = (globalThis.__brightlaneStore = globalThis.__brightlaneStore || {});\n  }\n  if (!Array.isArray(store.bookings)) store.bookings = seedStore();\n  return store;\n}\n\nfunction nextRef(store) {\n  let highest = 0;\n  for (const b of store.bookings) {\n    const m = /^APT-(\\d+)$/.exec(String(b.ref || ''));\n    if (m) highest = Math.max(highest, parseInt(m[1], 10));\n  }\n  return 'APT-' + String(highest + 1).padStart(4, '0');\n}\n\n// The agent sends its arguments as a JSON object (often serialised to a\n// string). Accept either shape so both agent styles keep working.\nfunction parseArgs() {\n  let raw = (typeof query !== 'undefined' && query !== null) ? query : ($json && $json.query);\n  if (typeof raw === 'string') {\n    raw = raw.trim();\n    if (!raw) return {};\n    try { raw = JSON.parse(raw); } catch (err) {\n      throw new Error('Input must be a JSON object, for example: ' + JSON.stringify({ date: isoDate(2) }));\n    }\n  }\n  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {\n    throw new Error('Input must be a JSON object');\n  }\n  return raw;\n}\n\nfunction isSunday(dateIso) {\n  return new Date(dateIso + 'T12:00:00').getDay() === 0; // getDay(): 0 = Sunday\n}\n\n// input: {\"customer\": \"...\", \"service\": \"...\", \"date\": \"YYYY-MM-DD\"}\nconst args = parseArgs();\nconst customer = String(args.customer || '').trim();\nconst service = String(args.service || '').trim();\nconst date = String(args.date || '').trim();\nif (!customer || !service || !date) {\n  throw new Error('check_duplicate_booking needs {\"customer\",\"service\",\"date\":\"YYYY-MM-DD\"}');\n}\nconst store = getStore();\nconst hit = store.bookings.find(function (b) {\n  return b.status === 'Confirmed'\n    && b.customer.toLowerCase() === customer.toLowerCase()\n    && b.service.toLowerCase() === service.toLowerCase()\n    && b.date === date;\n});\nif (hit) {\n  return 'DUPLICATE: ' + customer + ' already has \"' + hit.service + '\" on ' + date +\n    ' (' + hit.ref + ' at ' + hit.time + '). Do not book again - mention the existing booking and ask if they want to change or cancel.';\n}\nreturn 'No duplicate: ' + customer + ' has no confirmed \"' + service + '\" booking on ' + date + '.';\n"
+      },
+      "id": "ba0037f9-8b77-44f4-b0c0-c7c20ac298c7",
+      "name": "Check Duplicate Booking",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        620,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "name": "save_booking",
+        "description": "Save a new appointment. Input MUST be a JSON object: {\"customer\": \"...\", \"phone\": \"...\", \"service\": \"...\", \"date\": \"YYYY-MM-DD\", \"time\": \"HH:MM\"}. Only offer times that check_availability returned as free (hourly 09:00-16:00, closed Sundays). Refuses duplicates and slot conflicts and explains why. Returns the new booking reference (APT-XXXX).",
+        "language": "javaScript",
+        "jsCode": "\n// ---- Brightlane demo booking store -----------------------------------------\n// In ACTIVE (production) executions this persists between chats through\n// $getWorkflowStaticData('global'). In editor test runs the store resets on\n// every run - for the workshop that doubles as the \"reset\" button.\nconst SLOT_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];\nconst SERVICES = ['Home Deep Cleaning', 'Standard Home Cleaning', 'Plumbing Visit', 'Electrical Visit', 'HVAC Maintenance', 'Appliance Repair Visit'];\n\nfunction isoDate(offsetDays) {\n  const d = new Date();\n  d.setDate(d.getDate() + (offsetDays || 0));\n  const m = String(d.getMonth() + 1).padStart(2, '0');\n  const day = String(d.getDate()).padStart(2, '0');\n  return d.getFullYear() + '-' + m + '-' + day;\n}\n\nfunction seedStore() {\n  const now = new Date().toISOString().slice(0, 16).replace('T', ' ');\n  return [\n    { ref: 'APT-0001', customer: 'Maya Chen',     phone: '555-0143', service: 'Home Deep Cleaning',     date: isoDate(3), time: '10:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0002', customer: 'Dmitri Volkov', phone: '555-0177', service: 'Appliance Repair Visit', date: isoDate(2), time: '14:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0003', customer: 'Elena Petrova', phone: '555-0164', service: 'Plumbing Visit',         date: isoDate(2), time: '16:00', status: 'Confirmed', created: now },\n  ];\n}\n\nfunction getStore() {\n  let store = null;\n  try { store = $getWorkflowStaticData('global'); } catch (err) { store = null; }\n  if (!store || typeof store !== 'object') {\n    store = (globalThis.__brightlaneStore = globalThis.__brightlaneStore || {});\n  }\n  if (!Array.isArray(store.bookings)) store.bookings = seedStore();\n  return store;\n}\n\nfunction nextRef(store) {\n  let highest = 0;\n  for (const b of store.bookings) {\n    const m = /^APT-(\\d+)$/.exec(String(b.ref || ''));\n    if (m) highest = Math.max(highest, parseInt(m[1], 10));\n  }\n  return 'APT-' + String(highest + 1).padStart(4, '0');\n}\n\n// The agent sends its arguments as a JSON object (often serialised to a\n// string). Accept either shape so both agent styles keep working.\nfunction parseArgs() {\n  let raw = (typeof query !== 'undefined' && query !== null) ? query : ($json && $json.query);\n  if (typeof raw === 'string') {\n    raw = raw.trim();\n    if (!raw) return {};\n    try { raw = JSON.parse(raw); } catch (err) {\n      throw new Error('Input must be a JSON object, for example: ' + JSON.stringify({ date: isoDate(2) }));\n    }\n  }\n  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {\n    throw new Error('Input must be a JSON object');\n  }\n  return raw;\n}\n\nfunction isSunday(dateIso) {\n  return new Date(dateIso + 'T12:00:00').getDay() === 0; // getDay(): 0 = Sunday\n}\n\n// input: {\"customer\",\"phone\",\"service\",\"date\":\"YYYY-MM-DD\",\"time\":\"HH:MM\"}\nconst args = parseArgs();\nfor (const k of ['customer', 'phone', 'service', 'date', 'time']) {\n  if (!args[k] || !String(args[k]).trim()) {\n    throw new Error('save_booking needs {\"customer\",\"phone\",\"service\",\"date\",\"time\"} - missing \"' + k + '\"');\n  }\n}\nconst customer = String(args.customer).trim();\nconst phone = String(args.phone).trim();\nconst service = String(args.service).trim();\nconst date = String(args.date).trim();\nconst time = String(args.time).trim();\n\nif (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) {\n  throw new Error('date must be YYYY-MM-DD (got \"' + date + '\"). Today is ' + isoDate() + '.');\n}\nconst serviceOk = SERVICES.some(function (s) { return s.toLowerCase() === service.toLowerCase(); });\nif (!serviceOk) {\n  throw new Error('Unknown service \"' + service + '\". Valid services: ' + SERVICES.join(', '));\n}\nif (isSunday(date)) {\n  return 'Cannot book: ' + date + ' is a Sunday and Brightlane is closed. Offer Monday to Saturday instead.';\n}\nif (SLOT_HOURS.indexOf(time) === -1) {\n  return 'Cannot book: \"' + time + '\" is not a bookable start time. Hourly slots: ' + SLOT_HOURS.join(', ') + '.';\n}\n\nconst store = getStore();\nconst duplicate = store.bookings.find(function (b) {\n  return b.status === 'Confirmed'\n    && b.customer.toLowerCase() === customer.toLowerCase()\n    && b.service.toLowerCase() === service.toLowerCase()\n    && b.date === date;\n});\nif (duplicate) {\n  return 'Cannot book: duplicate. ' + customer + ' already has \"' + service + '\" on ' + date +\n    ' (' + duplicate.ref + ' at ' + duplicate.time + '). Mention the existing booking instead.';\n}\nconst conflict = store.bookings.find(function (b) {\n  return b.status === 'Confirmed' && b.date === date && b.time === time;\n});\nif (conflict) {\n  return 'Cannot book: ' + date + ' at ' + time + ' is already taken (' + conflict.ref + ' - ' +\n    conflict.customer + '). Offer one of the free slots from check_availability.';\n}\n\nconst booking = {\n  ref: nextRef(store),\n  customer: customer, phone: phone, service: service,\n  date: date, time: time, status: 'Confirmed',\n  created: new Date().toISOString().slice(0, 16).replace('T', ' '),\n};\nstore.bookings.push(booking);\nreturn 'Booked: ' + booking.ref + ' - ' + customer + ', ' + service + ', ' + date + ' at ' + time +\n  '. (Demo store; resets between editor test runs.)';\n"
+      },
+      "id": "fc85e578-0e9d-44bc-98dc-64f51ed9a194",
+      "name": "Save Booking",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        800,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "name": "list_bookings",
+        "description": "List every booking in the demo store (reference, customer, phone, service, date, time, status). Input MUST be the empty JSON object: {}",
+        "language": "javaScript",
+        "jsCode": "\n// ---- Brightlane demo booking store -----------------------------------------\n// In ACTIVE (production) executions this persists between chats through\n// $getWorkflowStaticData('global'). In editor test runs the store resets on\n// every run - for the workshop that doubles as the \"reset\" button.\nconst SLOT_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];\nconst SERVICES = ['Home Deep Cleaning', 'Standard Home Cleaning', 'Plumbing Visit', 'Electrical Visit', 'HVAC Maintenance', 'Appliance Repair Visit'];\n\nfunction isoDate(offsetDays) {\n  const d = new Date();\n  d.setDate(d.getDate() + (offsetDays || 0));\n  const m = String(d.getMonth() + 1).padStart(2, '0');\n  const day = String(d.getDate()).padStart(2, '0');\n  return d.getFullYear() + '-' + m + '-' + day;\n}\n\nfunction seedStore() {\n  const now = new Date().toISOString().slice(0, 16).replace('T', ' ');\n  return [\n    { ref: 'APT-0001', customer: 'Maya Chen',     phone: '555-0143', service: 'Home Deep Cleaning',     date: isoDate(3), time: '10:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0002', customer: 'Dmitri Volkov', phone: '555-0177', service: 'Appliance Repair Visit', date: isoDate(2), time: '14:00', status: 'Confirmed', created: now },\n    { ref: 'APT-0003', customer: 'Elena Petrova', phone: '555-0164', service: 'Plumbing Visit',         date: isoDate(2), time: '16:00', status: 'Confirmed', created: now },\n  ];\n}\n\nfunction getStore() {\n  let store = null;\n  try { store = $getWorkflowStaticData('global'); } catch (err) { store = null; }\n  if (!store || typeof store !== 'object') {\n    store = (globalThis.__brightlaneStore = globalThis.__brightlaneStore || {});\n  }\n  if (!Array.isArray(store.bookings)) store.bookings = seedStore();\n  return store;\n}\n\nfunction nextRef(store) {\n  let highest = 0;\n  for (const b of store.bookings) {\n    const m = /^APT-(\\d+)$/.exec(String(b.ref || ''));\n    if (m) highest = Math.max(highest, parseInt(m[1], 10));\n  }\n  return 'APT-' + String(highest + 1).padStart(4, '0');\n}\n\n// The agent sends its arguments as a JSON object (often serialised to a\n// string). Accept either shape so both agent styles keep working.\nfunction parseArgs() {\n  let raw = (typeof query !== 'undefined' && query !== null) ? query : ($json && $json.query);\n  if (typeof raw === 'string') {\n    raw = raw.trim();\n    if (!raw) return {};\n    try { raw = JSON.parse(raw); } catch (err) {\n      throw new Error('Input must be a JSON object, for example: ' + JSON.stringify({ date: isoDate(2) }));\n    }\n  }\n  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {\n    throw new Error('Input must be a JSON object');\n  }\n  return raw;\n}\n\nfunction isSunday(dateIso) {\n  return new Date(dateIso + 'T12:00:00').getDay() === 0; // getDay(): 0 = Sunday\n}\n\n// input: {}\nconst store = getStore();\nconst list = store.bookings.slice().sort(function (a, b) {\n  return (a.date + a.time).localeCompare(b.date + b.time);\n});\nif (list.length === 0) return 'No bookings in the demo store yet.';\nreturn list.map(function (b) {\n  return b.ref + ' | ' + b.customer + ' | ' + b.phone + ' | ' + b.service + ' | ' +\n    b.date + ' ' + b.time + ' | ' + b.status;\n}).join('\\n');\n"
+      },
+      "id": "0fc9430c-670c-4beb-b281-3b9c513e47e0",
+      "name": "List Bookings",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [
+        980,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ Before you demo\n1. Open **OpenAI Chat Model** and **Embeddings OpenAI** and pick your own OpenAI credential (create once under *Credentials → New → OpenAI*). No keys are stored in this JSON.\n2. Click **Chat** and test. Seed demo bookings load automatically.\n3. Bookings persist while the workflow is **Active** (`$getWorkflowStaticData`). In editor test runs the store resets every run - that *is* the reset button.\n4. Model defaults to `gpt-4o-mini`; swap on the chat-model sub-node. Gemini users: replace the OpenAI sub-nodes with Gemini ones.\n5. The FAQ text lives in the **Company Knowledge Document** Set node - edit it there (same text as `data/company_services.txt` in the repo).",
+        "height": 220,
+        "width": 680,
+        "color": 4
+      },
+      "id": "027d1b7b-df77-477d-a1f9-7ce47c64365c",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔍 How this maps to the Python stages\nChat Trigger → Stage A. Knowledge Set → Default Data Loader → Text Splitter → Simple Vector Store = Stage B (RAG). AI Agent with the knowledge tool + 4 Code Tools = Stages C–E (deterministic booking rules).\nThe business rules live in the Code Tools: hourly slots 09:00–16:00, closed Sundays, duplicate = same customer + service + date, slot conflicts blocked, refs `APT-XXXX`.\nWatch a test run: the agent reasons in the AI Agent node output, tool calls show in each tool node.\nFor real persistence swap the Code Tools for Google Sheets/Excel nodes - see the repo README.",
+        "height": 220,
+        "width": 780,
+        "color": 5
+      },
+      "id": "b8890d05-8326-46af-b8aa-8b7324f0632f",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        340,
+        -160
+      ]
+    }
+  ],
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Company Knowledge Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Knowledge Document": {
+      "main": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Company Services Info",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Company Services Info",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate Booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Bookings": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

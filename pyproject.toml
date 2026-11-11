@@ -1,0 +1,24 @@
+[project]
+name = "bots-workshop"
+version = "0.1.0"
+description = "AI Agents, Chatbots & Business Automation workshop: the same appointment-booking assistant built twice (n8n low-code and Python + LangChain)."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = [
+    "langchain-core>=0.3",
+    "langchain-groq>=0.3",
+    "langchain-openai>=0.3",
+    "langchain-text-splitters>=0.3",
+    "langgraph>=0.4",
+    "openpyxl>=3.1",
+    "python-dotenv>=1.0",
+    "pydantic>=2.0",
+]
+
+# Dependency groups for `uv sync --dev` (none needed yet, kept as convention)
+[dependency-groups]
+dev = []
+
+[tool.uv]
+package = false
