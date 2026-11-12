@@ -14,14 +14,14 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 
-from common import SERVICES, SLOT_START_TIMES, get_llm
+from common import PLAIN_TEXT_RULE, SERVICES, SLOT_START_TIMES, get_llm
 
 # In-memory mock of "what is already booked" (Stage E swaps this for Excel).
 _TODAY = date.today()
 _SEED_DATE = (_TODAY + timedelta(days=3)).isoformat()  # handy relative date for demos
 _PREBOOKED = [
-    {"customer": "Maya Chen", "service": "Home Deep Cleaning", "date": _SEED_DATE, "time": "10:00"},
-    {"customer": "Dmitri Volkov", "service": "Appliance Repair Visit", "date": _SEED_DATE, "time": "14:00"},
+    {"customer": "Maya Chen", "service": "Admission Counselling", "date": _SEED_DATE, "time": "10:00"},
+    {"customer": "Dmitri Volkov", "service": "Fee Payment Assistance", "date": _SEED_DATE, "time": "14:00"},
 ]
 
 
@@ -62,12 +62,13 @@ def check_duplicate_booking(customer_name: str, booking_date: str, service: str)
 BOOKING_TOOLS = [check_availability, check_duplicate_booking]
 
 AGENT_SYSTEM = (
-    "You are the Brightlane Home Services customer-care/booking agent.\n"
+    "You are the Brainware University help-desk/booking agent.\n"
     f"Services: {', '.join(SERVICES)}. Today is {_TODAY.isoformat()}.\n"
     "Before recommending any booking decision, always verify with the tools:\n"
     "  - availability of date/time (check_availability)\n"
     "  - repeat bookings of the same customer+date+service (check_duplicate_booking)\n"
     "Never invent slot availability or prices; rely on tool results and say when data is missing."
+    + PLAIN_TEXT_RULE
 )
 
 
@@ -94,7 +95,7 @@ def main() -> None:
     print("Behold the agent's tool selection live. Pre-seeded demo booking:")
     for b in _PREBOOKED:
         print(f"  {b['customer']} - {b['service']} - {b['date']} {b['time']}")
-    print("Try asking: 'Is Maya Chen already booked for deep cleaning on', or")
+    print("Try asking: 'Is Maya Chen already booked for admission counselling on', or")
     print("            'Which times are free', or 'Can Dmitri book anything at 14:00?'\n")
     usage = check_availability.invoke({"check_date": _SEED_DATE})  # direct tool call, no agent needed
     print(f"Direct tool call check_availability('{_SEED_DATE}') -> {usage}\n")

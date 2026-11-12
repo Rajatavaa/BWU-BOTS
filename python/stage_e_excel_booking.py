@@ -17,6 +17,7 @@ from langgraph.prebuilt import create_react_agent
 import common
 from common import (
     COMPANY_DOCUMENT,
+    PLAIN_TEXT_RULE,
     SERVICES,
     WORKBOOK_PATH,
     get_llm,
@@ -41,8 +42,9 @@ def check_availability(check_date: str) -> str:
     rows = common.load_workbook_rows()
     booked = sorted(r["time"] for r in rows if r["status"] == "Confirmed" and str(r["date"]) == date_iso)
     free = [t for t in common.SLOT_START_TIMES if t not in set(booked)]
+    weekday = date.fromisoformat(date_iso).strftime("%A")  # real weekday so the model never guesses it
     return (
-        f"{date_iso} -> booked slots: {booked or 'none'} | free start times: "
+        f"{date_iso} ({weekday}) -> booked slots: {booked or 'none'} | free start times: "
         f"{', '.join(free) or 'none (fully booked)'}"
     )
 
@@ -114,21 +116,27 @@ def save_booking(customer_name: str, phone: str, service: str, booking_date: str
 BOOKING_TOOLS = [check_availability, check_duplicate_booking, save_booking]
 
 _AGENT_SYSTEM = (
-    "You are the customer care & appointment booking assistant of Brightlane Home Services.\n"
+    "You are the customer care & appointment booking assistant of Brainware University's help desk.\n"
     f"Today = {_TODAY}. Working hours: Mon-Sat, hourly 09:00-16:00 starts, Sundays closed.\n"
     f"Pick a service strictly from: {', '.join(SERVICES)}.\n"
     "\nYou are the booking assistant. Flow to CONFIRM a booking:\n"
     "  1. collect full name, phone, service, date, time by chatting with the customer\n"
     "  2. check_availability(date) to show/prove free slots on that date\n"
     "  3. check_duplicate_booking(name, date, service) - customer repeat-bookings rule\n"
-    "  4. save_booking(...) ONLY if both checks passed, then reply with the returned APT ref\n"
+    "  4. CONFIRM: summarise name, phone, service, date, time and ask 'Shall I book this?' - then STOP and wait\n"
+    "  5. save_booking(...) ONLY after the customer clearly says yes to that summary AND both checks passed;\n"
+    "     then reply with the returned APT ref\n"
+    "NEVER call save_booking on your own. If the customer only asks for suggestions or availability, suggest\n"
+    "one or two free slots from the tool and ask which they want - do not book.\n"
+    "Use weekday names only as given by check_availability; never work out a weekday yourself.\n"
+    "Be efficient: call each tool at most once per request and do not repeat checks you already did.\n"
     "If the requested time is occupied, offer the freshest free list from the tool - "
     "never promise availability the tools did not report.\n"
-    "Never invent prices, policies or slots; use the FAQ below when answering company questions.\n"
-    "\n--- COMPANY FAQ (used for non-booking questions) ---\n"
+    "Never invent prices, policies or slots; use the FAQ below when answering university questions.\n"
+    "\n--- BRAINWARE FAQ (used for non-booking questions) ---\n"
 )
 
-AGENT_SYSTEM_WITH_FAQ = _AGENT_SYSTEM + COMPANY_DOCUMENT.read_text(encoding="utf-8")
+AGENT_SYSTEM_WITH_FAQ = _AGENT_SYSTEM + COMPANY_DOCUMENT.read_text(encoding="utf-8") + PLAIN_TEXT_RULE
 
 
 def build_agent():

@@ -1,7 +1,7 @@
 """Stage B — Document-aware chatbot: grounding first, then RAG. (outline §3, Stage B)
 
-Part 1 - prompt-based grounding: the WHOLE services/FAQ document goes into the
-         system prompt. Works great for a short file like ours (`data/company_services.txt`).
+Part 1 - prompt-based grounding: the WHOLE knowledge document goes into the
+          system prompt. Works great for a short file like ours (`data/brainware.md`).
 Part 2 - RAG pipeline: load -> chunk -> embed -> retrieve -> answer with sources.
          Needed once a document grows past the "just paste it" point.
 
@@ -15,16 +15,17 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from common import COMPANY_DOCUMENT, get_llm, require_openai_key
+from common import COMPANY_DOCUMENT, PLAIN_TEXT_RULE, get_llm, require_openai_key
 from stage_a_chatbot import SYSTEM_PROMPT
 
 # ---------- Part 1: whole-document grounding (the easy case) ----------
 def grounded_answer(llm, document_text: str, question: str) -> str:
     system = (
-        "You are Brightlane Home Services customer care.\n"
-        "Answer ONLY using the company document below. If the answer is not in it, say so.\n\n"
-        "=== COMPANY DOCUMENT ===\n"
+        "You are the Brainware University help desk.\n"
+        "Answer ONLY using the knowledge document below. If the answer is not in it, say so.\n\n"
+        "=== KNOWLEDGE DOCUMENT ===\n"
         f"{document_text}\n=== END DOCUMENT ==="
+        f"{PLAIN_TEXT_RULE}"
     )
     reply = llm.invoke([SystemMessage(content=system), HumanMessage(content=question)])
     return reply.content
@@ -47,7 +48,9 @@ def build_rag_store():
 
 
 def rag_answer(llm, store: InMemoryVectorStore, question: str) -> str:
-    hits = store.similarity_search_with_score(question, k=3)
+    # k=6: broad questions (e.g. "what scholarships are offered?") span several chunks;
+    # k=3 missed the Merit and Vidya Jyoti scholarships.
+    hits = store.similarity_search_with_score(question, k=6)
     print("\n  retrieved chunks:")  # retrieval is visible -> great teaching moment
     for i, (doc, score) in enumerate(hits, 1):
         preview = " ".join(doc.page_content.split())[:72]
@@ -55,10 +58,11 @@ def rag_answer(llm, store: InMemoryVectorStore, question: str) -> str:
 
     context = "\n\n".join(f"[chunk {i}] {doc.page_content}" for i, (doc, _) in enumerate(hits, 1))
     system = (
-        "You are Brightlane Home Services customer care.\n"
+        "You are the Brainware University help desk.\n"
         "Answer ONLY from the retrieved chunks and cite [chunk N] markers.\n"
         "If the chunks do not contain the answer, say you are not sure.\n\n"
         f"{context}"
+        f"{PLAIN_TEXT_RULE}"
     )
     reply = llm.invoke([SystemMessage(content=system), HumanMessage(content=question)])
     return reply.content
@@ -70,7 +74,7 @@ def main() -> None:
     store = build_rag_store()
 
     print("\nSame question goes to BOTH methods so you can compare (type 'quit' to exit).")
-    print("Try: 'What is your reschedule policy?' or 'Do you visit Maple Street, Zone B?'\n")
+    print("Try: 'What programmes do you offer?' or 'How do I apply for admission?'\n")
 
     while True:
         try:

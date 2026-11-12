@@ -1,13 +1,11 @@
 """Shared helpers for the Python path of the workshop.
 
-Centralises the "boring but important" parts so the six stage scripts
-(Stages A-F in the teaching outline) can stay small and readable:
+Centralises the "boring but important" parts so the five stage scripts
+(Stages A-E) can stay small and readable:
 
 - .env loading and API-key checks (Groq chat model, OpenAI embeddings)
-- the fictional company's business rules (services, slots, validation)
+- the help desk's business rules (appointment purposes, slots, validation)
 - Excel read/write helpers for data/bookings_appointments.xlsx (openpyxl)
-
-Outline reference: docs/AI_Agents_Technical_Teaching_Outline.pdf
 """
 from __future__ import annotations
 
@@ -25,7 +23,7 @@ load_dotenv(find_dotenv(usecwd=False), override=False)
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE_DIR / "data"
-COMPANY_DOCUMENT = DATA_DIR / "company_services.txt"
+COMPANY_DOCUMENT = DATA_DIR / "brainware.md"
 WORKBOOK_PATH = DATA_DIR / "bookings_python.xlsx"
 
 # --- Model configuration (all keys stay in .env, never printed) ---
@@ -36,12 +34,12 @@ BOOKINGS_HEADERS = ["Booking Ref", "Customer Name", "Phone", "Service", "Date", 
 SLOT_START_TIMES = [f"{h:02d}:00" for h in range(9, 17)]  # hourly starts 09:00..16:00
 
 SERVICES = [
-    "Home Deep Cleaning",
-    "Standard Home Cleaning",
-    "Plumbing Visit",
-    "Electrical Visit",
-    "HVAC Maintenance",
-    "Appliance Repair Visit",
+    "Admission Counselling",
+    "Campus Tour",
+    "Hostel Enquiry",
+    "Exam Support",
+    "Scholarship Guidance",
+    "Fee Payment Assistance",
 ]
 
 WEEKDAYS = {
@@ -82,12 +80,23 @@ def get_groq_model() -> str:
     return os.environ.get("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip()
 
 
+# Appended to every chat system prompt: answers are read in a terminal, where
+# Markdown tables / **bold** / <links> show up as raw symbols.
+PLAIN_TEXT_RULE = (
+    "\nFORMAT: reply in plain text for a terminal. No Markdown: no tables, no ** or # symbols, "
+    "no <angle-bracket> links. Use short sentences, or simple '- ' bullet lines with one idea each. "
+    "Keep the answer under about 120 words and finish with one short follow-up question."
+)
+
+
 def get_llm(temperature: float = 0.2):
     """Groq chat model via LangChain. Note how explicit the auth step is — and
     that we never echo the key back."""
     from langchain_groq import ChatGroq
 
-    return ChatGroq(model=get_groq_model(), api_key=require_groq_key(), temperature=temperature)
+    model = get_groq_model()
+    extra = {"reasoning_effort": "low"} if "gpt-oss" in model else {}  # gpt-oss thinks a lot by default = slow
+    return ChatGroq(model=model, api_key=require_groq_key(), temperature=temperature, **extra)
 
 
 # --- Deterministic "business rules" (the non-LLM side of the assistant) ---
@@ -221,13 +230,13 @@ def seed_demo_bookings() -> dict[str, dict]:
     d2 = (date.today() + timedelta(days=2)).isoformat()
     return {
         1: {"ref": "APT-0001", "customer": "Maya Chen", "phone": "555-0143",
-            "service": "Home Deep Cleaning", "date": d1, "time": "10:00",
+            "service": "Admission Counselling", "date": d1, "time": "10:00",
             "status": "Confirmed", "created": datetime.now().isoformat(timespec="minutes")},
         2: {"ref": "APT-0002", "customer": "Dmitri Volkov", "phone": "555-0177",
-            "service": "Appliance Repair Visit", "date": d2, "time": "14:00",
+            "service": "Fee Payment Assistance", "date": d2, "time": "14:00",
             "status": "Confirmed", "created": datetime.now().isoformat(timespec="minutes")},
         3: {"ref": "APT-0003", "customer": "Elena Petrova", "phone": "555-0164",
-            "service": "Plumbing Visit", "date": d2, "time": "16:00",
+            "service": "Hostel Enquiry", "date": d2, "time": "16:00",
             "status": "Confirmed", "created": datetime.now().isoformat(timespec="minutes")},
     }
 

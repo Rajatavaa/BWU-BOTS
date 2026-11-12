@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from common import SERVICES, get_llm, normalize_time, parse_date, validate_slot
 
 CUSTOMER_SYSTEM = (
-    "You are the front-desk assistant of Brightlane Home Services.\n"
+    "You are the help-desk assistant of Brainware University.\n"
     "Collect, in a natural chat flow, the customer's: full name, phone, service, date, time.\n"
     f"Our services: {', '.join(SERVICES)}.\n"
     "Ask for at most one missing item per reply and confirm what you captured."
@@ -23,11 +23,11 @@ CUSTOMER_SYSTEM = (
 
 class CustomerDetails(BaseModel):
     """The structured, machine-checkable version of what the customer said."""
-    full_name: str = Field(description="Customer's full name; empty string if not known yet.")
-    phone: str = Field(description="Phone number as the customer typed it; empty string if unknown.")
-    service: str = Field(description="One of the Brightlane service names; empty string if unknown.")
-    date: str = Field(description="Requested date, as the customer phrased it; empty string if unknown.")
-    time: str = Field(description="Requested time, as the customer phrased it; empty string if unknown.")
+    full_name: str = Field(default="", description="Customer's full name; empty string if not known yet.")
+    phone: str = Field(default="", description="Phone number as the customer typed it; empty string if unknown.")
+    service: str = Field(default="", description="One of the Brainware help-desk service names; empty string if unknown.")
+    date: str = Field(default="", description="Requested date, as the customer phrased it; empty string if unknown.")
+    time: str = Field(default="", description="Requested time, as the customer phrased it; empty string if unknown.")
 
 
 REQUIRED_FIELDS = ("full_name", "phone", "service", "date", "time")
@@ -65,7 +65,7 @@ def main() -> None:
     extractor = llm.with_structured_output(CustomerDetails)  # model -> schema (function calling)
 
     print("Stage C demo. Drip-feed details or give them all at once.")
-    print("Examples: 'Maya Chen, 555-0143'  |  'Deep cleaning next friday at 11am'\n")
+    print("Examples: 'Maya Chen, 555-0143'  |  'Admission counselling next friday at 11am'\n")
 
     history: list = [SystemMessage(content=CUSTOMER_SYSTEM)]  # conversation state
     details = CustomerDetails()  # validated data state (kept separate on purpose)

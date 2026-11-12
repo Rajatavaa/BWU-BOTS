@@ -12,11 +12,11 @@ def main() -> None:
     print(f"Recreated {WORKBOOK_PATH} with {len(rows)} seed rows:\n")
     for r in rows:
         print(f"  {r['ref']} | {r['customer']} | {r['service']} | {r['date']} at {r['time']}")
-    dates = sorted({str(r["date"]) for r in rows})
+    maya = next(r for r in rows if r["customer"] == "Maya Chen")
     print(
         "\nHandy demo prompts (dates are relative to today):\n"
-        f"  - Slot-conflict test -> {dates[0]} 10:00 is taken by Maya Chen.\n"
-        "  - Duplicate test    -> ask Maya Chen to book Home Deep Cleaning on her existing date again.\n"
+        f"  - Slot-conflict test -> {maya['date']} 10:00 is taken by Maya Chen.\n"
+        "  - Duplicate test    -> ask Maya Chen to book Admission Counselling on her existing date again.\n"
         "  Then run: python python/stage_e_excel_booking.py\n"
     )
     # keep the seed function referenced for linters

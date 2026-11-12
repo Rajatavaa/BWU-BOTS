@@ -4,7 +4,7 @@ What this stage demonstrates:
 - API authentication without leaking secrets (keys live in .env, never printed)
 - a request = system + user messages; a response = a message object
 - temperature: creativity knob (try 0.2 vs 1.5 — see answer stability)
-- the model has NO knowledge of our company: it will guess services!
+- the model has NO knowledge of our university: it will guess answers!
 
 Run:  python python/stage_a_chatbot.py     (type 'quit' to exit)
 """
@@ -20,7 +20,8 @@ load_dotenv(find_dotenv(usecwd=False))
 
 SYSTEM_PROMPT = (
     "You are a friendly assistant in a live workshop demo. Keep answers short "
-    "(max 3 sentences) so the presenter can read them aloud."
+    "(max 3 sentences) so the presenter can read them aloud. "
+    "Reply in plain text: no Markdown, tables, ** or # symbols."
 )
 
 
@@ -38,7 +39,7 @@ def main() -> None:
     llm = ChatGroq(model=model_id, api_key=api_key, temperature=0.2)
 
     print(f"Model : {model_id}\nTemp  : 0.2   (change it above and re-run)\nKey loaded: yes (hidden)")
-    print("Try: 'What services do you offer?'  -> it will invent services: no company data yet!\n")
+    print("Try: 'What programmes does Brainware University offer?'  -> it will invent answers: no university data yet!\n")
 
     history: list = [SystemMessage(content=SYSTEM_PROMPT)]  # memory lives in this list (Stage C explains)
     while True:
